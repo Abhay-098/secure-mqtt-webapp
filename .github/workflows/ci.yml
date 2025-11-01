@@ -56,3 +56,9 @@ jobs:
           sleep 5
           curl -f http://127.0.0.1:5000 || (echo "❌ Flask app did not start" && exit 1)
           echo "✅ Flask app responded successfully!"
+      - name: Push image to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker tag secure-mqtt-webapp ${{ secrets.DOCKERHUB_USERNAME }}/secure-mqtt-webapp:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/secure-mqtt-webapp:latest
