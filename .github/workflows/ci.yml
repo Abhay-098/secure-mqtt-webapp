@@ -10,13 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Optional Mosquitto service (simplified for CI)
     services:
       mosquitto:
         image: eclipse-mosquitto:2.0
         ports:
           - 1883:1883
-        options: --detach
 
     steps:
       - name: Checkout code
