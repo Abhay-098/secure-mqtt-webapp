@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Secure MQTT Web App</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background:#f7f7f7; }
+    .card { background:white; padding:1rem; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:1rem;}
+    button { padding:0.5rem 1rem; border-radius:6px; border:0; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h2>Secure MQTT Web App — TLS + Client Certs</h2>
+  <div class="card">
+    <h3>1) Generate CA, Broker & Client Certificates</h3>
+    <p>This will run <code>generate_certs.sh</code> and create <code>certs/</code>.</p>
+    <button id="gen">Generate Certs</button>
+    <pre id="genout" style="white-space:pre-wrap;margin-top:8px;"></pre>
+  </div>
+
+  <div class="card">
+    <h3>2) Start sample client</h3>
+    <label>Mode:
+      <select id="mode"><option value="pub">Publisher</option><option value="sub">Subscriber</option></select>
+    </label>
+    <label>Client:
+      <select id="client"><option value="client1">client1</option><option value="client2">client2</option></select>
+    </label>
+    <label>Topic: <input id="topic" value="test/topic"/></label>
+    <label>Payload: <input id="payload" value="Hello"/></label>
+    <button id="start">Start Client</button>
+    <div id="startout" style="margin-top:8px;"></div>
+  </div>
+
+  <script>
+    document.getElementById('gen').onclick = async () => {
+      document.getElementById('genout').textContent = 'Generating...';
+      let res = await fetch('/generate', {method:'POST'});
+      let j = await res.json();
+      if(res.ok) document.getElementById('genout').textContent = j.output || 'Done';
+      else document.getElementById('genout').textContent = j.output || 'Error';
+    };
+    document.getElementById('start').onclick = async () => {
+      let mode = document.getElementById('mode').value;
+      let client = document.getElementById('client').value;
+      let topic = document.getElementById('topic').value;
+      let payload = document.getElementById('payload').value;
+      let res = await fetch('/start_client',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mode,client,topic,payload})});
+      let j = await res.json();
+      document.getElementById('startout').textContent = JSON.stringify(j);
+    };
+  </script>
+</body>
+</html>

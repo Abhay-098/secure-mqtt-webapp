@@ -1,0 +1,7 @@
+HOW TO VALIDATE / CAPTURE TRAFFIC (Wireshark)
+---------------------------------------------
+1. Run docker-compose and start mosquitto and the Flask app as described in README.
+2. Start a publisher and subscriber (use client_sim.py).
+3. On the machine running the broker, run Wireshark and capture traffic on the Docker interface (or host interface).
+4. Filter by tcp.port == 8883. You will observe TLS handshake and encrypted application data — payloads will not be in plaintext.
+5. If certificates are misconfigured, connections will fail (observe TLS alerts).
