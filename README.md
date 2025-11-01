@@ -1,6 +1,5 @@
 # Secure MQTT Web App
 **Project:** Enhancing IoT Security: Implementing a Secure MQTT Protocol  
-Source / Project brief: user-uploaded PDF (project report). See included reference: Computer Network Part A. fileciteturn0file0
 
 ## What this project provides
 - A web-based control panel (Flask) to **generate a CA, server and client certificates** using OpenSSL.
