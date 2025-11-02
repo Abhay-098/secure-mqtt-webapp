@@ -16,3 +16,7 @@ EXPOSE 5000
 
 # Default command: run Flask app
 CMD ["python", "app.py"]
+
+RUN pip install flask-socketio
+
+
