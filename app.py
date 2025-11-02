@@ -34,4 +34,5 @@ def start_client():
     return jsonify({'status':'started','pid':proc.pid})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+
