@@ -50,5 +50,18 @@
       document.getElementById('startout').textContent = JSON.stringify(j);
     };
   </script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('mqtt_message', function(data) {
+        const box = document.getElementById("mqttOutput");
+        const msg = `[${data.topic}] ${data.message}`;
+        box.value += msg + "\n";
+    });
+</script>
+
+<textarea id="mqttOutput" rows="10" cols="80" readonly style="margin-top:10px;"></textarea>
+
 </body>
 </html>
