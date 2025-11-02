@@ -1,37 +1,30 @@
-# Simplified MQTT publisher/subscriber using test.mosquitto.org
-import argparse, time
+# Simple MQTT publisher/subscriber with optional TLS + client certs
+import argparse, ssl, time, os
 import paho.mqtt.client as mqtt
-import socketio
 
-# Public MQTT broker
-BROKER_HOST = "test.mosquitto.org"
-BROKER_PORT = 1883  # unencrypted port
+# Default broker for Render testing
+BROKER_UNSECURE = "test.mosquitto.org"
+BROKER_SECURE = "test.mosquitto.org"
+PORT_UNSECURE = 1883
+PORT_SECURE = 8883
 
-# Connect to Flask SocketIO server
-sio = socketio.Client()
-try:
-    sio.connect('http://localhost:5000')
-except Exception:
-    # For Render, replace localhost with your Render domain
-    try:
-        sio.connect('https://secure-mqtt-webapp.onrender.com')
-    except Exception as e:
-        print("SocketIO connection failed:", e)
+CERT_DIR = os.path.join(os.getcwd(), "certs")
 
-
-def on_message(client, userdata, msg):
-    message = msg.payload.decode()
-    topic = msg.topic
-    print(f"RECV <- topic={topic} payload={message}")
-    try:
-        sio.emit('mqtt_message', {'topic': topic, 'message': message})
-    except Exception as e:
-        print("Emit failed:", e)
-
-
-def run_pub(client_name, topic, payload):
+def make_client(client_name, use_tls=False):
     c = mqtt.Client(client_id=client_name)
-    c.connect(BROKER_HOST, BROKER_PORT, 60)
+    if use_tls:
+        c.tls_set(
+            ca_certs=os.path.join(CERT_DIR, "ca", "ca.crt") if os.path.exists(os.path.join(CERT_DIR, "ca", "ca.crt")) else None,
+            tls_version=ssl.PROTOCOL_TLS_CLIENT
+        )
+        c.tls_insecure_set(False)
+    return c
+
+
+def run_pub(client_name, topic, payload, use_tls=False):
+    c = make_client(client_name, use_tls)
+    port = PORT_SECURE if use_tls else PORT_UNSECURE
+    c.connect(BROKER_SECURE if use_tls else BROKER_UNSECURE, port)
     c.loop_start()
     for i in range(3):
         msg = f"{payload} [{i}]"
@@ -42,13 +35,18 @@ def run_pub(client_name, topic, payload):
     c.disconnect()
 
 
-def run_sub(client_name, topic):
-    c = mqtt.Client(client_id=client_name)
+def on_message(client, userdata, msg):
+    print(f"RECV <- topic={msg.topic} payload={msg.payload.decode()}")
+
+
+def run_sub(client_name, topic, use_tls=False):
+    c = make_client(client_name, use_tls)
     c.on_message = on_message
-    c.connect(BROKER_HOST, BROKER_PORT, 60)
+    port = PORT_SECURE if use_tls else PORT_UNSECURE
+    c.connect(BROKER_SECURE if use_tls else BROKER_UNSECURE, port)
     c.subscribe(topic)
     c.loop_start()
-    print("Subscribed to", topic)
+    print(f"Subscribed to {topic} — {'TLS' if use_tls else 'Unsecure'} mode active")
     try:
         while True:
             time.sleep(1)
@@ -58,15 +56,16 @@ def run_sub(client_name, topic):
     c.disconnect()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument('--mode', choices=['pub', 'sub'], default='pub')
-    p.add_argument('--client', default='client1')
-    p.add_argument('--topic', default='test/topic')
-    p.add_argument('--payload', default='hello')
+    p.add_argument("--mode", choices=["pub", "sub"], default="pub")
+    p.add_argument("--client", default="client1")
+    p.add_argument("--topic", default="test/topic")
+    p.add_argument("--payload", default="hello")
+    p.add_argument("--tls", action="store_true", help="Enable TLS mode")
     args = p.parse_args()
 
-    if args.mode == 'pub':
-        run_pub(args.client, args.topic, args.payload)
+    if args.mode == "pub":
+        run_pub(args.client, args.topic, args.payload, args.tls)
     else:
-        run_sub(args.client, args.topic)
+        run_sub(args.client, args.topic, args.tls)
