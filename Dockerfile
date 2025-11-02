@@ -1,22 +1,22 @@
-# Secure MQTT Web App - Dockerfile
+# Use a lightweight Python base image
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Copy app files
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy all files to the container
+COPY . /app
 
-COPY . .
+# Install dependencies (Flask + SocketIO + MQTT)
+RUN pip install --no-cache-dir \
+    flask \
+    flask-socketio \
+    python-socketio \
+    paho-mqtt \
+    eventlet
 
-# Ensure cert generator is executable
-RUN chmod +x generate_certs.sh
-
+# Expose Flask app port
 EXPOSE 5000
 
-# Default command: run Flask app
+# Start the Flask app
 CMD ["python", "app.py"]
-
-RUN pip install flask-socketio
-
-
