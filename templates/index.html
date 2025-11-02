@@ -2,252 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🔒 Secure MQTT Web App</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    }
-    body {
-      margin: 0;
-      background: radial-gradient(circle at top left, #0f172a, #1e293b 80%);
-      color: #e2e8f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    h1 {
-      color: #38bdf8;
-      text-shadow: 0 0 10px rgba(56,189,248,0.3);
-      margin-bottom: 5px;
-    }
-    h3 {
-      color: #93c5fd;
-      margin-bottom: 10px;
-    }
-    .card {
-      background: rgba(30,41,59,0.95);
-      border: 1px solid rgba(56,189,248,0.2);
-      border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-      width: 90%;
-      max-width: 620px;
-      padding: 24px;
-      margin: 20px 0;
-      backdrop-filter: blur(8px);
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-      color: #cbd5e1;
-    }
-    input, select, textarea {
-      width: 100%;
-      margin-top: 6px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(56,189,248,0.3);
-      background: #1e293b;
-      color: #e2e8f0;
-      font-size: 15px;
-    }
-    button {
-      display: inline-block;
-      background: linear-gradient(90deg, #06b6d4, #3b82f6);
-      color: #f8fafc;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 20px;
-      margin-top: 15px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(59,130,246,0.5);
-    }
-    .output {
-      margin-top: 15px;
-      padding: 12px;
-      background: #0f172a;
-      color: #a5f3fc;
-      border: 1px solid #38bdf8;
-      border-radius: 8px;
-      height: 120px;
-      overflow-y: auto;
-      font-family: Consolas, monospace;
-      font-size: 14px;
-    }
-    textarea {
-      height: 160px;
-      resize: none;
-      font-family: Consolas, monospace;
-      border: 1px solid #38bdf8;
-    }
-    .mode-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 10px;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 30px;
-      margin-left: 10px;
-    }
-    .switch input { display:none; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #e11d48;
-      transition: .4s;
-      border-radius: 30px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 22px;
-      width: 22px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #22c55e;
-    }
-    input:checked + .slider:before {
-      transform: translateX(30px);
-    }
-    footer {
-      margin-top: 30px;
-      color: #64748b;
-      font-size: 14px;
-      text-align: center;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; margin: 0; padding: 20px; }
+    h1 { color: #0066cc; }
+    .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #0066cc; color: white; border: none; padding: 10px 20px; margin-top: 15px; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #004d99; }
+    pre { background: #1e1e1e; color: #00ff9c; padding: 10px; border-radius: 6px; height: 250px; overflow-y: auto; }
   </style>
 </head>
 <body>
-
   <h1>🔒 Secure MQTT Web App</h1>
-  <p style="color:#94a3b8;">Compare 🔓 Unsecure MQTT vs 🔐 Secure TLS MQTT — with live updates!</p>
 
   <div class="card">
-    <h3>1️⃣ Security Mode</h3>
-    <div class="mode-toggle">
-      <span id="modeLabel">Unsecure</span>
-      <label class="switch">
-        <input type="checkbox" id="securityToggle">
-        <span class="slider"></span>
-      </label>
-      <span>Secure</span>
-    </div>
-    <p style="margin-top:8px; font-size:14px; color:#9ca3af;">
-      Toggle between normal MQTT (port 1883) and TLS encrypted MQTT (port 8883).
-    </p>
+    <h2>1️⃣ Generate Certificates</h2>
+    <p>This runs the script to create CA, broker, and client certs.</p>
+    <button onclick="generateCerts()">Generate Certificates</button>
+    <pre id="genOutput"></pre>
   </div>
 
   <div class="card">
-    <h3>2️⃣ Generate Certificates (for Secure Mode)</h3>
-    <p>This simulates CA, Broker & Client certificate creation for TLS connections.</p>
-    <button id="genBtn">⚙️ Generate Certificates</button>
-    <div id="genOutput" class="output"></div>
-  </div>
-
-  <div class="card">
-    <h3>3️⃣ Start MQTT Client</h3>
+    <h2>2️⃣ Start MQTT Client</h2>
     <label>Mode:</label>
     <select id="mode">
       <option value="pub">Publisher</option>
       <option value="sub">Subscriber</option>
     </select>
-
-    <label>Client:</label>
+    <label>Client ID:</label>
     <input id="client" value="client1">
-
     <label>Topic:</label>
     <input id="topic" value="/vit/test">
-
-    <label>Payload (for Publisher only):</label>
-    <input id="payload" value="Hello MQTT Web App">
-
-    <button id="startBtn">🚀 Start Client</button>
-    <div id="clientOutput" class="output"></div>
+    <label>Payload:</label>
+    <input id="payload" value="Hello MQTT!">
+    <label><input type="checkbox" id="useTls"> Use TLS (Encrypted Mode)</label>
+    <button onclick="startClient()">Start Client</button>
+    <pre id="clientOutput"></pre>
   </div>
 
-  <div class="card">
-    <h3>📡 Live Messages</h3>
-    <textarea id="mqttOutput" readonly placeholder="Messages will appear here..."></textarea>
-  </div>
-
-  <footer>© 2025 Secure MQTT Demo — Built with Flask + Socket.IO</footer>
-
-  <!-- Socket.IO -->
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io();
 
-    let secureMode = false;
-
-    // Listen for live messages
-    socket.on('mqtt_message', function(data) {
-      const box = document.getElementById("mqttOutput");
-      const msg = `[${new Date().toLocaleTimeString()}] [${data.topic}] ${data.message}`;
-      box.value += msg + "\n";
-      box.scrollTop = box.scrollHeight;
+    socket.on("mqtt_log", data => {
+      const output = document.getElementById("clientOutput");
+      output.textContent += data.line + "\n";
+      output.scrollTop = output.scrollHeight;
     });
 
-    // Security toggle
-    document.getElementById("securityToggle").addEventListener("change", (e) => {
-      secureMode = e.target.checked;
-      document.getElementById("modeLabel").textContent = secureMode ? "Secure" : "Unsecure";
-      document.getElementById("modeLabel").style.color = secureMode ? "#22c55e" : "#e11d48";
-    });
+    async function generateCerts() {
+      const res = await fetch("/generate", { method: "POST" });
+      const data = await res.json();
+      document.getElementById("genOutput").textContent = data.output || data.status;
+    }
 
-    // Generate certs
-    document.getElementById('genBtn').onclick = async () => {
-      const out = document.getElementById('genOutput');
-      out.textContent = "⏳ Generating certificates...";
-      try {
-        const res = await fetch('/generate', { method: 'POST' });
-        const data = await res.json();
-        out.textContent = "✅ " + data.output;
-      } catch (e) {
-        out.textContent = "❌ Error: " + e;
-      }
-    };
-
-    // Start client
-    document.getElementById('startBtn').onclick = async () => {
-      const mode = document.getElementById('mode').value;
-      const client = document.getElementById('client').value;
-      const topic = document.getElementById('topic').value;
-      const payload = document.getElementById('payload').value;
-      const out = document.getElementById('clientOutput');
-      out.textContent = "⏳ Starting client...";
-      try {
-        const res = await fetch('/start_client', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({mode, client, topic, payload, secure: secureMode})
-        });
-        const data = await res.json();
-        out.textContent = "✅ Client started\n" + JSON.stringify(data, null, 2);
-      } catch (e) {
-        out.textContent = "❌ Error: " + e;
-      }
-    };
+    async function startClient() {
+      const body = {
+        mode: document.getElementById("mode").value,
+        client: document.getElementById("client").value,
+        topic: document.getElementById("topic").value,
+        payload: document.getElementById("payload").value,
+        use_tls: document.getElementById("useTls").checked
+      };
+      const res = await fetch("/start_client", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      document.getElementById("clientOutput").textContent += `Started client: ${JSON.stringify(data)}\n`;
+    }
   </script>
-
 </body>
 </html>
