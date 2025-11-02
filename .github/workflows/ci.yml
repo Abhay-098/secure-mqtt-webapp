@@ -49,9 +49,6 @@ jobs:
           docker build -t secure-mqtt-webapp .
           echo "✅ Docker image built successfully"
 
-      - name: Show login info (debug)
-        run: docker info | grep Username || true
-
       - name: Push image to Docker Hub
         if: github.ref == 'refs/heads/main'
         run: |
@@ -60,9 +57,11 @@ jobs:
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/secure-mqtt-webapp:latest
 
       - name: Basic Flask test
+        env:
+          FLASK_APP: app.py
         run: |
           echo "🚀 Launching quick Flask app test..."
-          python -m flask --app app run --port=5000 &
+          python -m flask run --host=0.0.0.0 --port=5000 &
           sleep 5
           curl -f http://127.0.0.1:5000 || (echo "❌ Flask app did not start" && exit 1)
           echo "✅ Flask app responded successfully!"
