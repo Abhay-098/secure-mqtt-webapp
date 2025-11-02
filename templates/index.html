@@ -6,22 +6,83 @@
   <title>🔒 Secure MQTT Web App</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; margin: 0; padding: 20px; }
-    h1 { color: #0066cc; }
-    .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #0066cc; color: white; border: none; padding: 10px 20px; margin-top: 15px; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #004d99; }
-    pre { background: #1e1e1e; color: #00ff9c; padding: 10px; border-radius: 6px; height: 250px; overflow-y: auto; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(120deg, #e6f2ff, #f5f7fa);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #0059b3;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 0 auto 25px auto;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+      max-width: 700px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #004d99;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #00ff9c;
+      padding: 12px;
+      border-radius: 6px;
+      height: 240px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    .status {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      color: white;
+      font-size: 14px;
+    }
+    .secure {
+      background-color: #00b300;
+    }
+    .unsecure {
+      background-color: #e60000;
+    }
   </style>
 </head>
 <body>
-  <h1>🔒 Secure MQTT Web App</h1>
+  <h1>🔒 Secure MQTT Web App (TLS + Client Certs)</h1>
 
   <div class="card">
     <h2>1️⃣ Generate Certificates</h2>
-    <p>This runs the script to create CA, broker, and client certs.</p>
+    <p>This runs the script to create CA, broker, and client certificates.</p>
     <button onclick="generateCerts()">Generate Certificates</button>
     <pre id="genOutput"></pre>
   </div>
@@ -33,13 +94,21 @@
       <option value="pub">Publisher</option>
       <option value="sub">Subscriber</option>
     </select>
+
     <label>Client ID:</label>
     <input id="client" value="client1">
+
     <label>Topic:</label>
     <input id="topic" value="/vit/test">
+
     <label>Payload:</label>
-    <input id="payload" value="Hello MQTT!">
-    <label><input type="checkbox" id="useTls"> Use TLS (Encrypted Mode)</label>
+    <input id="payload" value="Hello Secure MQTT!">
+
+    <label>
+      <input type="checkbox" id="useTls" onchange="updateStatus()"> Use TLS (Encrypted)
+      <span id="tlsStatus" class="status unsecure">Unsecure Mode</span>
+    </label>
+
     <button onclick="startClient()">Start Client</button>
     <pre id="clientOutput"></pre>
   </div>
@@ -60,18 +129,36 @@
     }
 
     async function startClient() {
+      const useTls = document.getElementById("useTls").checked;
       const body = {
         mode: document.getElementById("mode").value,
         client: document.getElementById("client").value,
         topic: document.getElementById("topic").value,
         payload: document.getElementById("payload").value,
-        use_tls: document.getElementById("useTls").checked
+        use_tls: useTls
       };
       const res = await fetch("/start_client", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       });
       const data = await res.json();
-      document.getElementById("clientOutput").textContent += `Started client: ${JSON.stringify(data)}\n`;
+      const output = document.getElementById("clientOutput");
+      output.textContent += `Started client (${useTls ? 'Secure TLS' : 'Unsecure'}) → ${JSON.stringify(data)}\n`;
+    }
+
+    function updateStatus() {
+      const checkbox = document.getElementById("useTls");
+      const status = document.getElementById("tlsStatus");
+      if (checkbox.checked) {
+        status.textContent = "Secure TLS Mode";
+        status.classList.remove("unsecure");
+        status.classList.add("secure");
+      } else {
+        status.textContent = "Unsecure Mode";
+        status.classList.remove("secure");
+        status.classList.add("unsecure");
+      }
     }
   </script>
 </body>
