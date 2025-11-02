@@ -1,9 +1,9 @@
 from flask import Flask, render_template, jsonify, request
-from flask_socketio import SocketIO, emit
-import subprocess, os, threading, sys, time
+from flask_socketio import SocketIO
+import subprocess, threading, sys, time, os
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 @app.route('/')
 def index():
@@ -11,7 +11,6 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    # Simulated certificate generation
     time.sleep(1)
     return jsonify({'status': 'ok', 'output': '✅ Certificates generated (simulated for demo)'})
 
@@ -45,4 +44,4 @@ def start_client():
     return jsonify({'status': 'started', 'pid': proc.pid})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
