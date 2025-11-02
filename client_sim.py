@@ -1,18 +1,19 @@
-# MQTT publisher/subscriber using WebSockets + optional TLS
 import argparse, ssl, time, sys
 import paho.mqtt.client as mqtt
 
-BROKER = "test.mosquitto.org"
-PORT_WS = 8081  # MQTT over WebSockets (Render allows this)
+# Use EMQX public broker (always reachable via WebSockets)
+BROKER = "broker.emqx.io"
+PORT_WS = 8083        # plain WebSocket
+PORT_WSS = 8084       # TLS encrypted WebSocket
 
 def log(msg):
     print(msg)
     sys.stdout.flush()
 
 def on_connect(client, userdata, flags, rc):
-    log(f"Connected to broker with code {rc}")
+    log(f"Connected with result code {rc}")
     if rc == 0:
-        log("✅ Connected successfully")
+        log("✅ Connection successful")
     else:
         log("❌ Connection failed")
 
@@ -20,12 +21,12 @@ def on_message(client, userdata, msg):
     log(f"RECV <- {msg.topic}: {msg.payload.decode()}")
 
 def run_pub(client_name, topic, payload, use_tls=False):
-    log(f"Publisher ({'TLS' if use_tls else 'Unsecure'}) starting...")
+    port = PORT_WSS if use_tls else PORT_WS
     c = mqtt.Client(client_id=client_name, transport="websockets")
     if use_tls:
         c.tls_set(tls_version=ssl.PROTOCOL_TLS_CLIENT)
     c.on_connect = on_connect
-    c.connect(BROKER, PORT_WS, 60)
+    c.connect(BROKER, port, 60)
     c.loop_start()
     time.sleep(1)
     for i in range(3):
@@ -35,22 +36,23 @@ def run_pub(client_name, topic, payload, use_tls=False):
         time.sleep(1)
     c.loop_stop()
     c.disconnect()
-    log("Publisher done.")
+    log("Publisher finished.")
 
 def run_sub(client_name, topic, use_tls=False):
-    log(f"Subscriber ({'TLS' if use_tls else 'Unsecure'}) waiting on {topic}...")
+    port = PORT_WSS if use_tls else PORT_WS
     c = mqtt.Client(client_id=client_name, transport="websockets")
     if use_tls:
         c.tls_set(tls_version=ssl.PROTOCOL_TLS_CLIENT)
     c.on_message = on_message
     c.on_connect = on_connect
-    c.connect(BROKER, PORT_WS, 60)
+    c.connect(BROKER, port, 60)
     c.subscribe(topic)
+    log(f"Subscribed to {topic} on {BROKER}:{port}")
     c.loop_forever()
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--mode", choices=["pub", "sub"], default="pub")
+    p.add_argument("--mode", choices=["pub","sub"], default="pub")
     p.add_argument("--client", default="client1")
     p.add_argument("--topic", default="/vit/test")
     p.add_argument("--payload", default="Hello MQTT!")
