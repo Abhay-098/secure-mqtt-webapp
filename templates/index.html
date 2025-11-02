@@ -48,9 +48,7 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-    button:hover {
-      background: #004d99;
-    }
+    button:hover { background: #004d99; }
     pre {
       background: #1e1e1e;
       color: #00ff9c;
@@ -69,12 +67,8 @@
       color: white;
       font-size: 14px;
     }
-    .secure {
-      background-color: #00b300;
-    }
-    .unsecure {
-      background-color: #e60000;
-    }
+    .secure { background-color: #00b300; }
+    .unsecure { background-color: #e60000; }
   </style>
 </head>
 <body>
@@ -111,6 +105,12 @@
 
     <button onclick="startClient()">Start Client</button>
     <pre id="clientOutput"></pre>
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <h3>ℹ️ Encryption Summary</h3>
+    <p>🟢 <b>Secure TLS Mode</b>: Encrypted WebSocket (WSS, data hidden)<br>
+       🔴 <b>Unsecure Mode</b>: Plain WebSocket (data visible)</p>
   </div>
 
   <script>
