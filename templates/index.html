@@ -20,12 +20,12 @@
     }
     h1 {
       color: #38bdf8;
-      margin-bottom: 10px;
       text-shadow: 0 0 10px rgba(56,189,248,0.3);
+      margin-bottom: 5px;
     }
     h3 {
       color: #93c5fd;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .card {
       background: rgba(30,41,59,0.95);
@@ -33,7 +33,7 @@
       border-radius: 14px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
       width: 90%;
-      max-width: 600px;
+      max-width: 620px;
       padding: 24px;
       margin: 20px 0;
       backdrop-filter: blur(8px);
@@ -87,6 +87,48 @@
       font-family: Consolas, monospace;
       border: 1px solid #38bdf8;
     }
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+      margin-left: 10px;
+    }
+    .switch input { display:none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #e11d48;
+      transition: .4s;
+      border-radius: 30px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #22c55e;
+    }
+    input:checked + .slider:before {
+      transform: translateX(30px);
+    }
     footer {
       margin-top: 30px;
       color: #64748b;
@@ -98,19 +140,32 @@
 <body>
 
   <h1>🔒 Secure MQTT Web App</h1>
-  <p style="color:#94a3b8;">Publish & Subscribe messages securely over MQTT — with live updates!</p>
+  <p style="color:#94a3b8;">Compare 🔓 Unsecure MQTT vs 🔐 Secure TLS MQTT — with live updates!</p>
 
-  <!-- Certificate Section -->
   <div class="card">
-    <h3>1️⃣ Generate Certificates</h3>
-    <p>This simulates creating CA, Broker & Client certificates (TLS setup).</p>
+    <h3>1️⃣ Security Mode</h3>
+    <div class="mode-toggle">
+      <span id="modeLabel">Unsecure</span>
+      <label class="switch">
+        <input type="checkbox" id="securityToggle">
+        <span class="slider"></span>
+      </label>
+      <span>Secure</span>
+    </div>
+    <p style="margin-top:8px; font-size:14px; color:#9ca3af;">
+      Toggle between normal MQTT (port 1883) and TLS encrypted MQTT (port 8883).
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>2️⃣ Generate Certificates (for Secure Mode)</h3>
+    <p>This simulates CA, Broker & Client certificate creation for TLS connections.</p>
     <button id="genBtn">⚙️ Generate Certificates</button>
     <div id="genOutput" class="output"></div>
   </div>
 
-  <!-- MQTT Client Section -->
   <div class="card">
-    <h3>2️⃣ Start MQTT Client</h3>
+    <h3>3️⃣ Start MQTT Client</h3>
     <label>Mode:</label>
     <select id="mode">
       <option value="pub">Publisher</option>
@@ -124,13 +179,12 @@
     <input id="topic" value="/vit/test">
 
     <label>Payload (for Publisher only):</label>
-    <input id="payload" value="Hello from MQTT Web App">
+    <input id="payload" value="Hello MQTT Web App">
 
     <button id="startBtn">🚀 Start Client</button>
     <div id="clientOutput" class="output"></div>
   </div>
 
-  <!-- Live Messages -->
   <div class="card">
     <h3>📡 Live Messages</h3>
     <textarea id="mqttOutput" readonly placeholder="Messages will appear here..."></textarea>
@@ -143,11 +197,21 @@
   <script>
     const socket = io();
 
+    let secureMode = false;
+
+    // Listen for live messages
     socket.on('mqtt_message', function(data) {
       const box = document.getElementById("mqttOutput");
       const msg = `[${new Date().toLocaleTimeString()}] [${data.topic}] ${data.message}`;
       box.value += msg + "\n";
       box.scrollTop = box.scrollHeight;
+    });
+
+    // Security toggle
+    document.getElementById("securityToggle").addEventListener("change", (e) => {
+      secureMode = e.target.checked;
+      document.getElementById("modeLabel").textContent = secureMode ? "Secure" : "Unsecure";
+      document.getElementById("modeLabel").style.color = secureMode ? "#22c55e" : "#e11d48";
     });
 
     // Generate certs
@@ -163,7 +227,7 @@
       }
     };
 
-    // Start MQTT client
+    // Start client
     document.getElementById('startBtn').onclick = async () => {
       const mode = document.getElementById('mode').value;
       const client = document.getElementById('client').value;
@@ -175,7 +239,7 @@
         const res = await fetch('/start_client', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({mode, client, topic, payload})
+          body: JSON.stringify({mode, client, topic, payload, secure: secureMode})
         });
         const data = await res.json();
         out.textContent = "✅ Client started\n" + JSON.stringify(data, null, 2);
