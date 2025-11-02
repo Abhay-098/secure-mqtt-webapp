@@ -1,15 +1,30 @@
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
-import subprocess, threading, sys
+import subprocess, threading, sys, os, time
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/start_client', methods=['POST'])
+@app.route("/generate", methods=["POST"])
+def generate():
+    """
+    Simulate certificate generation (Render cannot run OpenSSL commands).
+    Creates fake files under ./certs/ and returns a message.
+    """
+    os.makedirs("certs/ca", exist_ok=True)
+    os.makedirs("certs/clients", exist_ok=True)
+    with open("certs/ca/ca.crt", "w") as f:
+        f.write("-----BEGIN CERTIFICATE-----\nFAKE_CA_CERTIFICATE\n-----END CERTIFICATE-----")
+    with open("certs/clients/client1.crt", "w") as f:
+        f.write("-----BEGIN CERTIFICATE-----\nFAKE_CLIENT_CERT\n-----END CERTIFICATE-----")
+    time.sleep(1)
+    return jsonify({"status": "ok", "output": "✅ Certificates generated (simulated for demo)"})
+
+@app.route("/start_client", methods=["POST"])
 def start_client():
     data = request.json
     mode = data.get("mode", "pub")
@@ -26,9 +41,7 @@ def start_client():
     if use_tls:
         cmd.append("--tls")
 
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
-    )
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
 
     def stream():
         for line in proc.stdout:
