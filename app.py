@@ -41,11 +41,18 @@ def start_client():
     if use_tls:
         cmd.append("--tls")
 
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
+    )
 
     def stream():
-        for line in proc.stdout:
-            socketio.emit("mqtt_log", {"line": line.strip()})
+        for line in iter(proc.stdout.readline, ''):
+            if line.strip():
+                socketio.emit("mqtt_log", {"line": line.strip()})
         proc.stdout.close()
 
     threading.Thread(target=stream, daemon=True).start()
