@@ -1,67 +1,189 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <title>Secure MQTT Web App</title>
+  <meta charset="UTF-8">
+  <title>🔒 Secure MQTT Web App</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; background:#f7f7f7; }
-    .card { background:white; padding:1rem; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:1rem;}
-    button { padding:0.5rem 1rem; border-radius:6px; border:0; cursor:pointer; }
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #0f172a, #1e293b 80%);
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      color: #38bdf8;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(56,189,248,0.3);
+    }
+    h3 {
+      color: #93c5fd;
+      margin-bottom: 8px;
+    }
+    .card {
+      background: rgba(30,41,59,0.95);
+      border: 1px solid rgba(56,189,248,0.2);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 600px;
+      padding: 24px;
+      margin: 20px 0;
+      backdrop-filter: blur(8px);
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      color: #cbd5e1;
+    }
+    input, select, textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(56,189,248,0.3);
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 15px;
+    }
+    button {
+      display: inline-block;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      color: #f8fafc;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      margin-top: 15px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(59,130,246,0.5);
+    }
+    .output {
+      margin-top: 15px;
+      padding: 12px;
+      background: #0f172a;
+      color: #a5f3fc;
+      border: 1px solid #38bdf8;
+      border-radius: 8px;
+      height: 120px;
+      overflow-y: auto;
+      font-family: Consolas, monospace;
+      font-size: 14px;
+    }
+    textarea {
+      height: 160px;
+      resize: none;
+      font-family: Consolas, monospace;
+      border: 1px solid #38bdf8;
+    }
+    footer {
+      margin-top: 30px;
+      color: #64748b;
+      font-size: 14px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h2>Secure MQTT Web App — TLS + Client Certs</h2>
+
+  <h1>🔒 Secure MQTT Web App</h1>
+  <p style="color:#94a3b8;">Publish & Subscribe messages securely over MQTT — with live updates!</p>
+
+  <!-- Certificate Section -->
   <div class="card">
-    <h3>1) Generate CA, Broker & Client Certificates</h3>
-    <p>This will run <code>generate_certs.sh</code> and create <code>certs/</code>.</p>
-    <button id="gen">Generate Certs</button>
-    <pre id="genout" style="white-space:pre-wrap;margin-top:8px;"></pre>
+    <h3>1️⃣ Generate Certificates</h3>
+    <p>This simulates creating CA, Broker & Client certificates (TLS setup).</p>
+    <button id="genBtn">⚙️ Generate Certificates</button>
+    <div id="genOutput" class="output"></div>
   </div>
 
+  <!-- MQTT Client Section -->
   <div class="card">
-    <h3>2) Start sample client</h3>
-    <label>Mode:
-      <select id="mode"><option value="pub">Publisher</option><option value="sub">Subscriber</option></select>
-    </label>
-    <label>Client:
-      <select id="client"><option value="client1">client1</option><option value="client2">client2</option></select>
-    </label>
-    <label>Topic: <input id="topic" value="test/topic"/></label>
-    <label>Payload: <input id="payload" value="Hello"/></label>
-    <button id="start">Start Client</button>
-    <div id="startout" style="margin-top:8px;"></div>
+    <h3>2️⃣ Start MQTT Client</h3>
+    <label>Mode:</label>
+    <select id="mode">
+      <option value="pub">Publisher</option>
+      <option value="sub">Subscriber</option>
+    </select>
+
+    <label>Client:</label>
+    <input id="client" value="client1">
+
+    <label>Topic:</label>
+    <input id="topic" value="/vit/test">
+
+    <label>Payload (for Publisher only):</label>
+    <input id="payload" value="Hello from MQTT Web App">
+
+    <button id="startBtn">🚀 Start Client</button>
+    <div id="clientOutput" class="output"></div>
   </div>
 
-  <script>
-    document.getElementById('gen').onclick = async () => {
-      document.getElementById('genout').textContent = 'Generating...';
-      let res = await fetch('/generate', {method:'POST'});
-      let j = await res.json();
-      if(res.ok) document.getElementById('genout').textContent = j.output || 'Done';
-      else document.getElementById('genout').textContent = j.output || 'Error';
-    };
-    document.getElementById('start').onclick = async () => {
-      let mode = document.getElementById('mode').value;
-      let client = document.getElementById('client').value;
-      let topic = document.getElementById('topic').value;
-      let payload = document.getElementById('payload').value;
-      let res = await fetch('/start_client',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mode,client,topic,payload})});
-      let j = await res.json();
-      document.getElementById('startout').textContent = JSON.stringify(j);
-    };
-  </script>
+  <!-- Live Messages -->
+  <div class="card">
+    <h3>📡 Live Messages</h3>
+    <textarea id="mqttOutput" readonly placeholder="Messages will appear here..."></textarea>
+  </div>
+
+  <footer>© 2025 Secure MQTT Demo — Built with Flask + Socket.IO</footer>
+
+  <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script>
+  <script>
     const socket = io();
 
     socket.on('mqtt_message', function(data) {
-        const box = document.getElementById("mqttOutput");
-        const msg = `[${data.topic}] ${data.message}`;
-        box.value += msg + "\n";
+      const box = document.getElementById("mqttOutput");
+      const msg = `[${new Date().toLocaleTimeString()}] [${data.topic}] ${data.message}`;
+      box.value += msg + "\n";
+      box.scrollTop = box.scrollHeight;
     });
-</script>
 
-<textarea id="mqttOutput" rows="10" cols="80" readonly style="margin-top:10px;"></textarea>
+    // Generate certs
+    document.getElementById('genBtn').onclick = async () => {
+      const out = document.getElementById('genOutput');
+      out.textContent = "⏳ Generating certificates...";
+      try {
+        const res = await fetch('/generate', { method: 'POST' });
+        const data = await res.json();
+        out.textContent = "✅ " + data.output;
+      } catch (e) {
+        out.textContent = "❌ Error: " + e;
+      }
+    };
+
+    // Start MQTT client
+    document.getElementById('startBtn').onclick = async () => {
+      const mode = document.getElementById('mode').value;
+      const client = document.getElementById('client').value;
+      const topic = document.getElementById('topic').value;
+      const payload = document.getElementById('payload').value;
+      const out = document.getElementById('clientOutput');
+      out.textContent = "⏳ Starting client...";
+      try {
+        const res = await fetch('/start_client', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({mode, client, topic, payload})
+        });
+        const data = await res.json();
+        out.textContent = "✅ Client started\n" + JSON.stringify(data, null, 2);
+      } catch (e) {
+        out.textContent = "❌ Error: " + e;
+      }
+    };
+  </script>
 
 </body>
 </html>
